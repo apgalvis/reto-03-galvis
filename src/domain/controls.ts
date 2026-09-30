@@ -3,7 +3,7 @@ import { loadMasters } from "../repositories/files.js"
 import { normalizeName, normalizeNit } from "./normalize.js"
 
 export type ControlStatus = "passed" | "blocked" | "confirmation" | "derived" | "not_applicable"
-export type ControlResult = { codigo: `RC${number}`; status: ControlStatus; detalle: string }
+export type ControlResult = { codigo: string; status: ControlStatus; detalle: string }
 export type Issue = { codigo: string; detalle: string }
 export type DerivedValue<T = unknown> = { value: T; source: string; requiresConfirmation: boolean }
 

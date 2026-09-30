@@ -30,7 +30,7 @@ export const validar: ToolDefinition<{ caso: string; paquete: Paquete }> = {
 }
 
 export const generar_evidencia: ToolDefinition<{ caso: string }> = {
-  description: "Genera la evidencia TXT y PDF del correo de aprobación y devuelve rutas y SHA256.",
+  description: "Genera la evidencia TXT del correo de aprobación y devuelve ruta y SHA256 (PDF queda como P1 opcional).",
   args: { caso: z.string().min(1).describe("Nombre del caso") },
   async execute(args, ctx) {
     try { return JSON.stringify(ok(await generateEvidence(ctx.directory, args.caso))) }

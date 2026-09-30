@@ -4,7 +4,7 @@ Implementación TypeScript del reto técnico de Periferia IT Group.
 
 ## Milestone actual
 
-Motor determinístico P0/P1 de lectura, RC1–RC10, evidencia TXT+PDF, payload SAP, SAP mock e idempotencia. `demo.ts` corre sin LLM/API key.
+Motor determinístico P0/P1 de lectura, RC1–RC10, evidencia TXT (P0), payload SAP, SAP mock e idempotencia. `demo.ts` corre sin LLM/API key.
 
 ## Requisitos
 

@@ -4,6 +4,8 @@ import { FixedClock } from "./src/core/clock.js"
 import { executeTool } from "./src/core/tool.js"
 import type { ToolContext } from "./src/core/types.js"
 import { tools } from "./src/tools/index.js"
+import { grantConfirmation } from "./src/core/confirmation.js"
+import { appendControl } from "./src/repositories/control.js"
 
 type Envelope<T> = { ok: true; data: T } | { ok: false; error: string }
 function unwrap<T>(raw: string): T {
@@ -34,14 +36,20 @@ async function processCase(caseName: string, confirm = false) {
   if (validation.apta) {
     await call("oc_generar_evidencia", { caso: caseName })
     const built = await call<any>("oc_construir_payload", { caso: caseName, paquete, derivados: validation.derivados })
+    if (confirm && validation.confirmaciones.length > 0) await grantConfirmation(ctx, caseName)
     const createRaw = await executeTool("oc_crear", tools.oc_crear, { caso: caseName, payload: built.orden, confirmado: confirm }, ctx)
     const create = JSON.parse(createRaw) as Envelope<any>
     if (create.ok) numero = create.data.numero_oc
     else motivo = create.error
   } else {
-    // Registra el intento bloqueado a través de oc_crear no es posible sin payload;
-    // el demo reporta el bloqueo directamente desde la validación.
     motivo = validation.bloqueos.map((x: any) => `${x.codigo}: ${x.detalle}`).join(" | ")
+    await appendControl(ctx.directory, ctx.clock, {
+      solicitud_id: paquete.solicitud.solicitud_id,
+      resultado: "blocked",
+      retroactiva: validation.retroactiva,
+      bloqueos: validation.bloqueos.map((x: any) => `${x.codigo}: ${x.detalle}`),
+      confirmaciones: validation.confirmaciones.map((x: any) => `${x.codigo}: ${x.detalle}`),
+    })
   }
 
   const result = {

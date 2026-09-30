@@ -4,6 +4,7 @@ import { readPackage } from "./package.js"
 import { validatePackage } from "./controls.js"
 import { OrdenCompraSchema, type OrdenCompra } from "./schemas.js"
 import { appendControl } from "../repositories/control.js"
+import { hasConfirmation } from "../core/confirmation.js"
 
 export async function createOrder(ctx: ToolContext, caseName: string, rawPayload: unknown, confirmed: boolean) {
   const paquete = await readPackage(ctx.directory, caseName)
@@ -21,7 +22,8 @@ export async function createOrder(ctx: ToolContext, caseName: string, rawPayload
     })
     throw new Error(`OC bloqueada: ${reasons.join(" | ")}`)
   }
-  if (validation.confirmaciones.length > 0 && !confirmed) {
+  const backendConfirmed = validation.confirmaciones.length === 0 ? true : await hasConfirmation(ctx, caseName)
+  if (validation.confirmaciones.length > 0 && (!confirmed || !backendConfirmed)) {
     await appendControl(ctx.directory, ctx.clock, {
       solicitud_id: paquete.solicitud.solicitud_id,
       resultado: "pending_confirmation",
@@ -29,7 +31,8 @@ export async function createOrder(ctx: ToolContext, caseName: string, rawPayload
       bloqueos: reasons,
       confirmaciones: confirmations,
     })
-    throw new Error(`Se requiere confirmación humana: ${confirmations.join(" | ")}`)
+    const gate = confirmed && !backendConfirmed ? "El flag confirmado=true no tiene una confirmación humana validada por backend." : "Se requiere confirmación humana."
+    throw new Error(`${gate} ${confirmations.join(" | ")}`)
   }
 
   const order = OrdenCompraSchema.parse(rawPayload)
