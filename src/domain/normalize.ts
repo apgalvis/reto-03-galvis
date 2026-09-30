@@ -1,6 +1,6 @@
 export function normalizeNit(value: string): string {
-  const digits = value.replace(/\D/g, "")
-  return digits.length > 9 ? digits.slice(0, 9) : digits
+  const withoutCheckDigit = value.trim().replace(/-(\d)\s*$/, "")
+  return withoutCheckDigit.replace(/\D/g, "")
 }
 
 export function normalizeName(value: string): string {

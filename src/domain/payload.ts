@@ -9,7 +9,7 @@ import { writeJson } from "../repositories/files.js"
 function inferUnit(description: string): "UN" | "H" | "MES" {
   const text = description.toLowerCase()
   if (/\b(hora|horas)\b/.test(text)) return "H"
-  if (/\b(mes|meses|mensual)\b/.test(text)) return "MES"
+  if (/\b(mensualidad|mensualidades)\b/.test(text) || /\b(mes|meses) de (servicio|suscripci[oó]n)\b/.test(text)) return "MES"
   return "UN"
 }
 

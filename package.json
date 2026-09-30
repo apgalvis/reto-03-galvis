@@ -5,8 +5,8 @@
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
-    "demo": "tsx demo.ts",
-    "test": "vitest run",
+    "demo": "npm run build && node dist/demo.js",
+    "test": "npm run build && node --test dist/tests/*.test.js",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
     "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\""
@@ -16,8 +16,6 @@
   },
   "devDependencies": {
     "@types/node": "^22.15.32",
-    "tsx": "^4.20.3",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "^5.8.3"
   }
 }

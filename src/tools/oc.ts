@@ -48,7 +48,9 @@ export const construir_payload: ToolDefinition<{ caso: string; paquete: Paquete;
   async execute(args, ctx) {
     try {
       const validation = await validatePackage(ctx.directory, args.paquete)
-      validation.derivados = args.derivados
+      if (JSON.stringify(args.derivados) !== JSON.stringify(validation.derivados)) {
+        return JSON.stringify(fail("Los valores derivados enviados no coinciden con los maestros; vuelve a ejecutar oc_validar."))
+      }
       return JSON.stringify(ok(await buildPayload(ctx.directory, args.caso, args.paquete, validation)))
     } catch (e) { return JSON.stringify(fail(e instanceof Error ? e.message : "No se pudo construir payload")) }
   },

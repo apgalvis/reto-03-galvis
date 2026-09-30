@@ -3,6 +3,7 @@ import { FileSapAdapter } from "../sap/mock.js"
 import { readPackage } from "./package.js"
 import { validatePackage } from "./controls.js"
 import { OrdenCompraSchema, type OrdenCompra } from "./schemas.js"
+import { buildPayload } from "./payload.js"
 import { appendControl } from "../repositories/control.js"
 import { hasConfirmation } from "../core/confirmation.js"
 
@@ -36,6 +37,18 @@ export async function createOrder(ctx: ToolContext, caseName: string, rawPayload
   }
 
   const order = OrdenCompraSchema.parse(rawPayload)
+  const expected = (await buildPayload(ctx.directory, caseName, paquete, validation)).orden
+  if (JSON.stringify(order) !== JSON.stringify(expected)) {
+    await appendControl(ctx.directory, ctx.clock, {
+      solicitud_id: paquete.solicitud.solicitud_id,
+      resultado: "blocked",
+      retroactiva: validation.retroactiva,
+      bloqueos: ["PAYLOAD_TAMPERED: el payload no coincide con fuentes y reglas determinísticas"],
+      confirmaciones: confirmations,
+    })
+    throw new Error("Payload rechazado: no coincide con los valores reconstruidos desde fuentes confiables")
+  }
+
   const withConfirmation: OrdenCompra = {
     ...order,
     excepciones: order.excepciones.map((e) => ({
