@@ -16,11 +16,31 @@ const instructions = await loadAgentInstructions(directory)
 const port = parseInteger(process.env.PORT, 3000, 1, 65_535)
 const maxIterations = parseInteger(process.env.MAX_AGENT_ITERATIONS, 25, 1, 50)
 const maxSessionTokens = parseInteger(process.env.MAX_SESSION_TOKENS, 12_000, 1_000, 200_000)
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGIN ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean),
+)
 
 function parseInteger(value: string | undefined, fallback: number, min: number, max: number): number {
   const parsed = Number(value ?? fallback)
   if (!Number.isInteger(parsed) || parsed < min || parsed > max) return fallback
   return parsed
+}
+
+function applyCors(req: IncomingMessage, res: ServerResponse): boolean {
+  const origin = req.headers.origin
+  if (!origin) return true
+
+  const wildcard = allowedOrigins.has("*")
+  if (!wildcard && !allowedOrigins.has(origin)) return false
+
+  res.setHeader("Access-Control-Allow-Origin", wildcard ? "*" : origin)
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  if (!wildcard) res.setHeader("Vary", "Origin")
+  return true
 }
 
 function sendJson(res: ServerResponse, status: number, data: unknown): void {
@@ -76,6 +96,25 @@ async function handleChat(req: IncomingMessage, res: ServerResponse): Promise<vo
 
 const server = http.createServer(async (req, res) => {
   try {
+    res.setHeader("Cache-Control", "no-store")
+    res.setHeader("X-Content-Type-Options", "nosniff")
+
+    const corsAllowed = applyCors(req, res)
+    if (req.method === "OPTIONS") {
+      if (!corsAllowed) {
+        sendJson(res, 403, { error: "Origen no permitido" })
+        return
+      }
+      res.writeHead(204, { Allow: "GET,POST,OPTIONS" })
+      res.end()
+      return
+    }
+
+    if (!corsAllowed) {
+      sendJson(res, 403, { error: "Origen no permitido" })
+      return
+    }
+
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`)
     if (req.method === "GET" && url.pathname === "/api/health") {
       sendJson(res, 200, { ok: true, provider: adapter.provider, model: adapter.model })
@@ -102,12 +141,6 @@ const server = http.createServer(async (req, res) => {
       return
     }
 
-    if (req.method === "OPTIONS") {
-      res.writeHead(204, { Allow: "GET,POST,OPTIONS" })
-      res.end()
-      return
-    }
-
     sendJson(res, 404, { error: "Ruta no encontrada" })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error inesperado"
@@ -117,7 +150,7 @@ const server = http.createServer(async (req, res) => {
 
 server.requestTimeout = 40_000
 server.headersTimeout = 45_000
-server.listen(port, () => {
+server.listen(port, "0.0.0.0", () => {
   console.log(`Reto 03 API escuchando en http://localhost:${port}`)
   console.log(`Proveedor LLM: ${adapter.provider} / ${adapter.model}`)
 })
