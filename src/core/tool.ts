@@ -5,6 +5,8 @@ import type { ToolContext } from "./types.js"
 export type ToolDefinition<TArgs extends Record<string, unknown>> = {
   description: string
   args: { [K in keyof TArgs]: ZodTypeAny }
+  parameters: Record<string, unknown>
+  strict?: boolean
   execute(args: TArgs, ctx: ToolContext): Promise<string>
 }
 
@@ -20,7 +22,7 @@ export async function executeTool<TArgs extends Record<string, unknown>>(
 ): Promise<string> {
   const parsed = argsSchema(tool).safeParse(rawArgs)
   if (!parsed.success) {
-    const result = JSON.stringify({ ok: false, error: parsed.error.issues.map((i) => i.message).join("; ") })
+    const result = JSON.stringify({ ok: false, error: parsed.error.issues.map((i: { message: string }) => i.message).join("; ") })
     await appendToolLog(ctx, { tool: name, args: rawArgs, result: JSON.parse(result) })
     return result
   }

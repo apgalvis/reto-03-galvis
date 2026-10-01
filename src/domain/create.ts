@@ -51,7 +51,7 @@ export async function createOrder(ctx: ToolContext, caseName: string, rawPayload
 
   const withConfirmation: OrdenCompra = {
     ...order,
-    excepciones: order.excepciones.map((e) => ({
+    excepciones: order.excepciones.map((e: OrdenCompra["excepciones"][number]) => ({
       ...e,
       confirmado_por: e.confirmado_por ?? (validation.confirmaciones.some((c) => c.codigo === e.codigo) ? (ctx.actor ?? ctx.sessionId) : null),
     })),

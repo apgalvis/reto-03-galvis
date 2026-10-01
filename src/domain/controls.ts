@@ -31,10 +31,10 @@ export async function validatePackage(directory: string, paquete: Paquete): Prom
   let supplier: Proveedor | undefined
   if (s.proveedor_nit) {
     const nit = normalizeNit(s.proveedor_nit)
-    supplier = masters.proveedores.find((p) => normalizeNit(p.nit) === nit)
+    supplier = masters.proveedores.find((p: Proveedor) => normalizeNit(p.nit) === nit)
   } else {
     const name = normalizeName(s.proveedor_nombre)
-    supplier = masters.proveedores.find((p) => normalizeName(p.nombre) === name)
+    supplier = masters.proveedores.find((p: Proveedor) => normalizeName(p.nombre) === name)
   }
 
   if (!supplier) {
@@ -48,9 +48,9 @@ export async function validatePackage(directory: string, paquete: Paquete): Prom
     derived.proveedor = { value: supplier, source: "maestro.proveedores", requiresConfirmation: false }
   }
 
-  const center = masters.centros.find((c) => c.centro_costo === s.centro_costo)
+  const center = masters.centros.find((c: import("./schemas.js").CentroCosto) => c.centro_costo === s.centro_costo)
   const approver = center && paquete.aprobacion
-    ? center.aprobadores.find((a) => a.email.toLowerCase() === paquete.aprobacion?.de.toLowerCase())
+    ? center.aprobadores.find((a: { email: string; nombre: string; tope: number }) => a.email.toLowerCase() === paquete.aprobacion?.de.toLowerCase())
     : undefined
 
   if (!paquete.aprobacion) {

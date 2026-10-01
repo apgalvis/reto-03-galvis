@@ -11,6 +11,8 @@ import { createOrder } from "../domain/create.js"
 export const leer_paquete: ToolDefinition<{ caso: string }> = {
   description: "Lee y normaliza correo, solicitud, cotización, aprobación y factura opcional de un caso de orden de compra.",
   args: { caso: z.string().min(1).describe("Nombre de la carpeta del caso en fixtures/reto-03/solicitudes/") },
+  parameters: { type: "object", properties: { caso: { type: "string", description: "Nombre de la carpeta del caso, por ejemplo sol-004" } }, required: ["caso"], additionalProperties: false },
+  strict: true,
   async execute(args, ctx) {
     try { return JSON.stringify(ok(await readPackage(ctx.directory, args.caso))) }
     catch (e) { return JSON.stringify(fail(e instanceof Error ? e.message : "No se pudo leer el paquete")) }
@@ -23,6 +25,13 @@ export const validar: ToolDefinition<{ caso: string; paquete: Paquete }> = {
     caso: z.string().min(1).describe("Nombre del caso"),
     paquete: PaqueteSchema.describe("Paquete normalizado devuelto por oc_leer_paquete"),
   },
+  parameters: {
+    type: "object",
+    properties: { caso: { type: "string" }, paquete: { type: "object", additionalProperties: true } },
+    required: ["caso", "paquete"],
+    additionalProperties: false,
+  },
+  strict: false,
   async execute(args, ctx) {
     try { return JSON.stringify(ok(await validatePackage(ctx.directory, args.paquete))) }
     catch (e) { return JSON.stringify(fail(e instanceof Error ? e.message : "No se pudo validar")) }
@@ -32,6 +41,8 @@ export const validar: ToolDefinition<{ caso: string; paquete: Paquete }> = {
 export const generar_evidencia: ToolDefinition<{ caso: string }> = {
   description: "Genera la evidencia TXT del correo de aprobación y devuelve ruta y SHA256 (PDF queda como P1 opcional).",
   args: { caso: z.string().min(1).describe("Nombre del caso") },
+  parameters: { type: "object", properties: { caso: { type: "string" } }, required: ["caso"], additionalProperties: false },
+  strict: true,
   async execute(args, ctx) {
     try { return JSON.stringify(ok(await generateEvidence(ctx.directory, args.caso))) }
     catch (e) { return JSON.stringify(fail(e instanceof Error ? e.message : "No se pudo generar evidencia")) }
@@ -45,6 +56,17 @@ export const construir_payload: ToolDefinition<{ caso: string; paquete: Paquete;
     paquete: PaqueteSchema.describe("Paquete normalizado"),
     derivados: z.record(z.object({ value: z.unknown(), source: z.string(), requiresConfirmation: z.boolean() })).describe("Valores derivados por oc_validar"),
   },
+  parameters: {
+    type: "object",
+    properties: {
+      caso: { type: "string" },
+      paquete: { type: "object", additionalProperties: true },
+      derivados: { type: "object", additionalProperties: true },
+    },
+    required: ["caso", "paquete", "derivados"],
+    additionalProperties: false,
+  },
+  strict: false,
   async execute(args, ctx) {
     try {
       const validation = await validatePackage(ctx.directory, args.paquete)
@@ -63,6 +85,17 @@ export const crear: ToolDefinition<{ caso: string; payload: unknown; confirmado?
     payload: OrdenCompraSchema.describe("Payload validado de la orden de compra"),
     confirmado: z.boolean().optional().describe("True solo tras confirmación humana explícita en el turno siguiente"),
   },
+  parameters: {
+    type: "object",
+    properties: {
+      caso: { type: "string" },
+      payload: { type: "object", additionalProperties: true },
+      confirmado: { type: ["boolean", "null"], description: "True solo después de confirmación humana explícita" },
+    },
+    required: ["caso", "payload", "confirmado"],
+    additionalProperties: false,
+  },
+  strict: false,
   async execute(args, ctx) {
     try { return JSON.stringify(ok(await createOrder(ctx, args.caso, args.payload, args.confirmado === true))) }
     catch (e) { return JSON.stringify(fail(e instanceof Error ? e.message : "No se pudo crear la OC")) }

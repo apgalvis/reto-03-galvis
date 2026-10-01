@@ -13,12 +13,12 @@ export class FileSapAdapter implements SapAdapter {
 
   private async records(): Promise<Array<{ numero_oc: string; fecha: string; orden: OrdenCompra }>> {
     const text = await fs.readFile(this.orderFile(), "utf8").catch(() => "")
-    return text.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line) as { numero_oc: string; fecha: string; orden: OrdenCompra })
+    return text.split(/\r?\n/).filter(Boolean).map((line: string) => JSON.parse(line) as { numero_oc: string; fecha: string; orden: OrdenCompra })
   }
 
   async consultarProveedor(nit: string) {
     const { proveedores } = await loadMasters(this.directory)
-    const p = proveedores.find((x) => x.nit === nit)
+    const p = proveedores.find((x: import("../domain/schemas.js").Proveedor) => x.nit === nit)
     return p ? { codigo_sap: p.codigo_sap, activo: p.activo } : null
   }
 
