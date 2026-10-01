@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "demo": "npm run build && node dist/demo.js",
     "test": "npm run build && node --test dist/tests/*.test.js",
     "typecheck": "tsc --noEmit",
     "build": "tsc -p tsconfig.json",
-    "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\""
+    "clean": "node -e \"require('fs').rmSync('out',{recursive:true,force:true})\"",
+    "dev": "npm run build && node --env-file=.env dist/src/server.js"
   },
   "dependencies": {
     "zod": "^3.25.76"
