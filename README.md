@@ -2,17 +2,51 @@
 
 Implementación TypeScript del reto técnico de Periferia IT Group.
 
+## Enlaces
+
+- **Aplicación pública:** https://reto-03-galvis.lovable.app
+- **Backend / Health:** https://reto-03-galvis-production.up.railway.app/api/health
+- **Repositorio:** https://github.com/apgalvis/reto-03-galvis
+
 ## Estado
 
 - Motor determinístico RC1–RC10 ✅
 - `demo.ts` sin LLM/API key ✅
 - SAP mock + idempotencia ✅
 - Human-in-the-loop validado por backend ✅
+- Confirmaciones humanas de un solo uso ✅
 - OpenAI Responses API adapter ✅
 - Agent loop con tool calls visibles ✅
 - API HTTP y sesiones en memoria ✅
-- Front de chat ⏳
-- Deploy público ⏳
+- Front de chat público ✅
+- Deploy público ✅
+- Persistencia de runtime mediante Railway Volume ✅
+
+## Arquitectura
+
+El principio central de la solución es:
+
+> **El modelo interpreta y orquesta; las reglas de negocio deciden.**
+
+```text
+Usuario
+  ↓
+Frontend conversacional
+  ↓
+API HTTP
+  ↓
+AgentLoop
+  ↓
+OpenAI Responses API
+  ↓
+Tools tipadas con Zod
+  ↓
+RC1–RC10 determinísticas
+  ↓
+Human-in-the-loop cuando aplica
+  ↓
+SAP mock + auditoría
+```
 
 ## Requisitos
 
@@ -26,7 +60,9 @@ npm install
 npm run demo
 ```
 
-## Ejecutar el chat/API local
+La demo procesa los fixtures directamente mediante las tools y no consume la API de OpenAI.
+
+## Ejecutar el backend local
 
 1. Copia `.env.example` a `.env`.
 2. Define `OPENAI_API_KEY` únicamente en `.env`; nunca la subas al repositorio.
@@ -56,7 +92,18 @@ Ejemplo de `POST /api/chat`:
 }
 ```
 
-La respuesta incluye `reply`, `toolCalls`, `needsConfirmation` y el estado de confirmación pendiente.
+La respuesta incluye `reply`, `toolCalls`, `needsConfirmation`, `pendingConfirmation` y uso acumulado de tokens.
+
+## Caso demostrativo: sol-004
+
+El agente identifica una diferencia de **6 %** entre la solicitud y la cotización:
+
+- Solicitud: COP 25.000.000
+- Cotización: COP 26.500.000
+- Regla: RC5
+- Resultado: requiere confirmación humana
+
+La OC no se crea hasta que el usuario confirme explícitamente en un turno posterior.
 
 ## Tests y calidad
 
@@ -66,13 +113,29 @@ npm run typecheck
 npm run build
 ```
 
-El suite actual cubre dominio, fixtures, anti-bypass de confirmación, integridad de payload y ciclo del agente con un adaptador LLM falso. Los tests no consumen la API de OpenAI.
+El suite cubre:
+
+- dominio y fixtures;
+- RC1–RC10;
+- idempotencia;
+- anti-bypass de confirmación;
+- confirmaciones humanas de un solo uso;
+- integridad del payload;
+- ciclo del agente con un adaptador LLM falso.
+
+Los tests no consumen la API de OpenAI.
 
 ## Seguridad
 
 - `fixtures/` es solo lectura.
-- `out/` se genera en ejecución y no se versiona.
-- La API key vive solo en variables de entorno del backend.
+- La API key vive únicamente en variables de entorno del backend.
 - El LLM no puede autorizar una confirmación por sí mismo.
-- `oc_crear` reconstruye el payload desde fuentes confiables antes de escribir en SAP mock.
+- Una confirmación humana no puede reutilizarse.
+- `oc_crear` reconstruye y compara el payload con las fuentes confiables antes de escribir en SAP mock.
+- CORS se restringe al frontend público.
 - Hay topes configurables de iteraciones, tokens, tamaño de mensaje y timeout del proveedor.
+- La persistencia operativa se realiza fuera del repositorio mediante un volumen montado en Railway.
+
+## Documentación técnica
+
+Ver `SOLUCION.md` para arquitectura, decisiones de diseño, trade-offs, estrategia de integración SAP, supuestos, riesgos y aproximación productiva.
