@@ -3,7 +3,12 @@ import path from "node:path"
 import { resolveOutPath } from "./fileGuard.js"
 import type { ToolContext } from "./types.js"
 
-type ConfirmationRecord = { caso: string; actor: string; grantedAt: string }
+type ConfirmationRecord = {
+  caso: string
+  actor: string
+  grantedAt: string
+  consumedAt?: string
+}
 
 function safeSessionId(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, "_")
@@ -18,16 +23,31 @@ async function read(ctx: ToolContext): Promise<ConfirmationRecord[]> {
   return JSON.parse(content) as ConfirmationRecord[]
 }
 
-export async function grantConfirmation(ctx: ToolContext, caso: string): Promise<void> {
-  const records = await read(ctx)
-  if (!records.some((r) => r.caso === caso)) {
-    records.push({ caso, actor: ctx.actor ?? ctx.sessionId, grantedAt: ctx.clock.now().toISOString() })
-  }
+async function write(ctx: ToolContext, records: ConfirmationRecord[]): Promise<void> {
   const file = target(ctx)
   await fs.mkdir(path.dirname(file), { recursive: true })
   await fs.writeFile(file, `${JSON.stringify(records, null, 2)}\n`, "utf8")
 }
 
+export async function grantConfirmation(ctx: ToolContext, caso: string): Promise<void> {
+  const records = await read(ctx)
+  records.push({
+    caso,
+    actor: ctx.actor ?? ctx.sessionId,
+    grantedAt: ctx.clock.now().toISOString(),
+  })
+  await write(ctx, records)
+}
+
 export async function hasConfirmation(ctx: ToolContext, caso: string): Promise<boolean> {
-  return (await read(ctx)).some((r) => r.caso === caso)
+  return (await read(ctx)).some((r) => r.caso === caso && !r.consumedAt)
+}
+
+export async function consumeConfirmation(ctx: ToolContext, caso: string): Promise<boolean> {
+  const records = await read(ctx)
+  const index = records.findIndex((r) => r.caso === caso && !r.consumedAt)
+  if (index < 0) return false
+  records[index] = { ...records[index]!, consumedAt: ctx.clock.now().toISOString() }
+  await write(ctx, records)
+  return true
 }
