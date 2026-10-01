@@ -10,6 +10,12 @@ function ensureInside(base: string, candidate: string): string {
   return resolvedCandidate
 }
 
+function outputRoot(directory: string): string {
+  const configured = process.env.OUT_DIR?.trim()
+  if (!configured) return path.join(directory, "out")
+  return path.isAbsolute(configured) ? path.resolve(configured) : path.resolve(directory, configured)
+}
+
 export async function resolveFixtureCase(directory: string, caseName: string): Promise<string> {
   if (!/^[a-z0-9-]+$/i.test(caseName)) {
     throw new Error("Nombre de caso inválido")
@@ -29,6 +35,6 @@ export function resolveFixtureMasters(directory: string): string {
 }
 
 export function resolveOutPath(directory: string, ...segments: string[]): string {
-  const base = path.join(directory, "out")
+  const base = outputRoot(directory)
   return ensureInside(base, path.join(base, ...segments))
 }
