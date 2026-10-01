@@ -16,7 +16,7 @@ La confirmación humana no se delega al modelo: `oc_validar` crea un estado pend
 La sesión también controla `MAX_SESSION_TOKENS` y el adaptador aplica timeout al proveedor LLM.
 
 ## 4. Elección del modelo
-Proveedor elegido: OpenAI mediante Responses API. El modelo por defecto es `gpt-6-sol`, configurable con `OPENAI_MODEL`, para no acoplar el ciclo del agente a una versión específica. Se usa function calling nativo; las tools simples usan esquema estricto y las estructuras complejas mantienen validación Zod autoritativa en backend.
+Proveedor elegido: OpenAI mediante Responses API. El modelo por defecto de desarrollo es `gpt-6-astra`, configurable con `OPENAI_MODEL`, para no acoplar el ciclo del agente a una versión específica. Se usa function calling nativo; las tools simples usan esquema estricto y las estructuras complejas mantienen validación Zod autoritativa en backend.
 
 El costo por caso se cerrará con medición real de tokens cuando se ejecute el benchmark end-to-end. No se fija una cifra teórica como si fuera una medición observada.
 

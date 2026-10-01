@@ -128,7 +128,7 @@ export class OpenAIResponsesAdapter implements LlmAdapter {
 export function openAIFromEnv(env: NodeJS.ProcessEnv = process.env): OpenAIResponsesAdapter {
   const config: OpenAIConfig = {
     apiKey: env.OPENAI_API_KEY ?? "",
-    model: env.OPENAI_MODEL ?? "gpt-6-sol",
+    model: env.OPENAI_MODEL ?? "gpt-6-astra",
     timeoutMs: Number(env.LLM_TIMEOUT_MS ?? "30000"),
     maxOutputTokens: Number(env.MAX_OUTPUT_TOKENS ?? "3000"),
   }
