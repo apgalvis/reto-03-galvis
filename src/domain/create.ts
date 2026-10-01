@@ -5,7 +5,7 @@ import { validatePackage } from "./controls.js"
 import { OrdenCompraSchema, type OrdenCompra } from "./schemas.js"
 import { buildPayload } from "./payload.js"
 import { appendControl } from "../repositories/control.js"
-import { hasConfirmation } from "../core/confirmation.js"
+import { consumeConfirmation, hasConfirmation } from "../core/confirmation.js"
 
 export async function createOrder(ctx: ToolContext, caseName: string, rawPayload: unknown, confirmed: boolean) {
   const paquete = await readPackage(ctx.directory, caseName)
@@ -56,6 +56,11 @@ export async function createOrder(ctx: ToolContext, caseName: string, rawPayload
       confirmado_por: e.confirmado_por ?? (validation.confirmaciones.some((c) => c.codigo === e.codigo) ? (ctx.actor ?? ctx.sessionId) : null),
     })),
   }
+  if (validation.confirmaciones.length > 0) {
+    const consumed = await consumeConfirmation(ctx, caseName)
+    if (!consumed) throw new Error("La confirmación humana ya fue utilizada o no está disponible.")
+  }
+
   const sap = new FileSapAdapter(ctx.directory, ctx.clock)
   const existing = await sap.buscarOrdenPorReferencia(order.referencia.solicitud_id)
   if (existing) {
