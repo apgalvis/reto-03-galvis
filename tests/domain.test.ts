@@ -106,3 +106,20 @@ test("payload alterado es rechazado aunque exista confirmación", async () => {
   tampered.posiciones[0]!.precio_unitario = 265000
   await assert.rejects(() => createOrder(ctx, "sol-004", tampered, true), /Payload rechazado/)
 })
+
+
+test("confirmación humana no se puede reutilizar", async () => {
+  await fs.rm(path.join(root, "out"), { recursive: true, force: true })
+  const ctx = { directory: root, sessionId: "single-use-test", actor: "tester", clock }
+  const p = await readPackage(root, "sol-004")
+  const v = await validatePackage(root, p)
+  await generateEvidence(root, "sol-004")
+  const { orden } = await buildPayload(root, "sol-004", p, v)
+  await grantConfirmation(ctx, "sol-004")
+  const first = await createOrder(ctx, "sol-004", orden, true)
+  assert.equal(first.numero_oc, "4500000001")
+  await assert.rejects(
+    () => createOrder(ctx, "sol-004", orden, true),
+    /confirmación humana validada por backend|ya fue utilizada/,
+  )
+})
